@@ -1,0 +1,84 @@
+# install python code auto complete
+
+1. first of all , install Vundle for vim
+	Vundle is a plugin manager tool. 
+
+    use cmd following:
+	git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+
+    Configure Plugins in ~/.vimrc:
+
+	set nocompatible              " be iMproved, required
+	filetype off                  " required
+	set rtp+=~/.vim/bundle/Vundle.vim
+	call vundle#begin()
+	Plugin 'VundleVim/Vundle.vim'
+	call vundle#end()            " required
+	filetype plugin indent on    " required
+
+
+    install Vundle Plugins using command following:
+
+	1) launch vim and  run :PluginInstall
+	2) install from command line : vim +PluginsInstall +qall
+
+
+2. next install YouCompleteMe Plugins using Vundle
+	
+    1) install CMake , vim-nox , python3-dev(may need sudo)
+	apt install build-essential cmake vim-nox python3-dev
+
+    2) install mono-complete . go , nodejs, default-jdk npm(also may need sudo )
+	apt install mono-complete golang nodejs default-jdk npm
+	
+    3) get YouCompleteMe source from github:
+	git clone https://github.com.cnpmjs.org/ycm-core/YouCompleteMe ~/.vim/bundle/YouCompleteMe
+	
+	attention : if u meet any download fail,please use github mirror download website like : https://hub.fastgit.xyz(4-10 useful)
+
+    4) download dependencies :
+	git submodule update --init --recursive 
+
+	attention : this step may encounter many download fail , please mannually download the files .
+
+    4) compile YCM
+	cd ~/.vim/bundle/YouCompleteMe
+	python3 install.py --clangd-completer
+
+3) addition
+
+1. install YCM via Vundle error:
+need vim version 8.1+  .
+
+solution : upgrade vim to lastest version:
+		https://askubuntu.com/questions/406111/what-is-the-command-in-the-terminal-to-update-vim-on-ubuntu
+		
+		error : YouCompleteMe unavailable: requires Vim compiled with Python (3.6.0+) support
+
+		cd .vim/bundle/YouCompleteMe/
+		python3 install.py --all
+		
+		cmake version need 3.14+ 
+		
+			update cmake version:
+			sudo apt purge --auto-remove cmake
+			wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+			sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+			sudo apt update
+			sudo apt install cmake
+for details: https://askubuntu.com/questions/355565/how-do-i-install-the-latest-version-of-cmake-from-the-command-line
+			
+
+		python3 install.py --all		
+		error : Your C++ compiler does NOT fully support C++17
+		
+		update gcc version to gcc-8 and g++-8:
+		sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+		sudo apt-get update
+		sudo apt-get install gcc-8 g++-8
+for details : https://askubuntu.com/questions/1028601/install-gcc-8-only-on-ubuntu-18-04
+
+		python3 install.py --all
+		error: Failed to build regex module / can't open file 'setup.py': [Errno 2] No such file or directory
+
+		
