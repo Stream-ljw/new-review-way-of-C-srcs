@@ -1,0 +1,16 @@
+error : “qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.”
+  solution :
+           sudo apt install libxcb-xinerama0
+
+addtion: 
+	for more error log detail ,run :
+	export QT_DEBUG_PLUGINS=1 
+	
+	after that we can learn what lib go wrong. we can use find option to locate that libxx.so:
+	ldd /opt/XnView/lib/platforms/libqxcb.so  | grep "not found"
+
+	for more ldd info , use 'man ldd' option.
+	
+	install the missing packages :
+	sudo apt install libxcbxxxx 
+

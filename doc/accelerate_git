@@ -1,0 +1,11 @@
+nslookup github.global.ssl.fastly.Net
+nslookup github.com
+
+vi /etc/hosts
+
+151.101.72.249 global-ssl.fastly.Net
+xxxx github
+
+sudo service network-manager restart
+
+
