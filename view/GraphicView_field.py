@@ -1,11 +1,34 @@
-
 import sys,math
 
 from PyQt5.QtWidgets import QApplication, QGraphicsScene , QGraphicsView, \
-                            QGraphicsPathItem
+                            QGraphicsPathItem, QGraphicsLinearLayout
 from PyQt5.QtCore import  Qt,QPointF
 from PyQt5.QtGui import QPainterPath, QPolygonF ,QPainter
 
+
+#  有一个类是专门 绘制图形 并且将内容填充进去
+# class generate_textItem(QGraphicsPathItem):
+
+#     def __init__(self, itemname : string):
+#         self.Linear_layout = QGraphicsLinearLayout(VERTICAL)
+        
+
+
+class GraphicsView_field(QGraphicsView):
+
+    def __init__(self):
+        super().__init__()
+
+        self.resize(300,300)
+        # 设置场景坐标原点和大小
+        self.back_scene = QGraphicsScene()
+        self.path = draw_arrow(QPointF(150.0,80.0),QPointF(150.0,60.0))
+        
+        self.back_scene.addItem(self.path)
+        self.setScene(self.back_scene)
+
+        #print('stream echo : {0}, {1}'.format(self.rect_item1.scenePos().x(), self.rect_item1.scenePos().y()))
+        #print('stream echo : {0}, {1}'.format(self.rect_item2.scenePos().x(), self.rect_item2.scenePos().y()))
 
 class draw_arrow(QGraphicsPathItem):
     
@@ -80,24 +103,7 @@ class draw_arrow(QGraphicsPathItem):
             painter.drawPolyline(triangle_source)
 
 
-
-class GraphicsView_field(QGraphicsView):
-
-    def __init__(self):
-        super().__init__()
-
-        self.resize(300,300)
-        # 设置场景坐标原点和大小
-        self.back_scene = QGraphicsScene()
-        self.path = draw_arrow(QPointF(150.0,80.0),QPointF(150.0,60.0))
-        
-        self.back_scene.addItem(self.path)
-        self.setScene(self.back_scene)
-
-        #print('stream echo : {0}, {1}'.format(self.rect_item1.scenePos().x(), self.rect_item1.scenePos().y()))
-        #print('stream echo : {0}, {1}'.format(self.rect_item2.scenePos().x(), self.rect_item2.scenePos().y()))
-
-
+'''
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
@@ -107,10 +113,10 @@ if __name__ == '__main__':
 
     sys.exit(app.exec_())
 
+'''
 
 
 
-#  有一个类是专门 绘制图形 并且将内容填充进去
 
 # 还有一个类是专门将上面绘制好的图形 通过 箭头连接起来 并进行显示
 

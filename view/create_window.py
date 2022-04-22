@@ -1,7 +1,17 @@
 import sys
 
-from PyQt5.QtWidgets import QWidget, QMainWindow, QPlainTextEdit, QHBoxLayout, QVBoxLayout, QFileDialog, QMessageBox, QAction, QMenu, QApplication
-from PyQt5.QtCore import Qt, QObject, QDir, QFileInfo, QFile, QTextStream
+# from pyqtgraph.flowchart import Flowchart
+
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QPlainTextEdit, QHBoxLayout, QVBoxLayout, QFileDialog, \
+                            QMessageBox, QAction, QMenu, \
+                            QGraphicsRectItem, QGraphicsEllipseItem, \
+                            QGraphicsScene , QGraphicsView, QLineEdit, QGraphicsLineItem,QTextEdit, QListWidget
+from PyQt5.QtCore import Qt, QObject, QDir, QFileInfo, QFile, QTextStream,QVariant
+
+from PyQt5.QtGui import QColor,QTextFormat
+from GraphicView_field import GraphicsView_field as Gf
+#from WebEngineView import create_WebEngineView_field as Wf
+from LineNumer_field import LineNumber_field as Lf
 
 class Window(QMainWindow):
 
@@ -11,16 +21,30 @@ class Window(QMainWindow):
         self.filename = ""
         self.create_Actions()
         self.create_MenuBar()
-        
+        # 使用GraphicsView作为callgraph
+        self.callgraph_field = Gf()
+        # 使用 WebEngineView制作CallGraph
+        #self.callgraph_field = Wf() 
+        #self.create_Flowchart_field()
+        self.lineNumberBar = Lf(self.editor)
+
         #1. layout control
+        layoutH = QHBoxLayout()
+        layoutH.addWidget(self.lineNumberBar)
+        layoutH.addWidget(self.editor)
+        layoutH.addWidget(self.callgraph_field)
+
+        #fc_item = self.fc.widget()
+        #layoutH.addWidget(fc_item)
+
         layoutV = QVBoxLayout()
         layoutV.addWidget(self.menubar_field)
-        layoutV.addWidget(self.editor)
-        
+        layoutV.addLayout(layoutH)
+
         #2.  add layout into QWidget module to show
         mainQWiget = QWidget(self)
         mainQWiget.setLayout(layoutV)
-       
+
         #3. QMainWindow.setCentralWidget takes ownership of the widget pointer
         #and deletes it at the approparite time. 
         self.setCentralWidget(mainQWiget)
@@ -62,7 +86,7 @@ class Window(QMainWindow):
 
     #Implement open file operation to openAction
     def Open_file_event(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + '/Document/' \
+        path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + '/Document/' ,\
                 'Text Files (*.txt *.c *.py);; All Files (*.*)')
 
         if path:
@@ -129,9 +153,14 @@ class Window(QMainWindow):
 
         return self.Save_file_event()
 
+    def paintEvent(self, event):
+        highlighted_line = QTextEdit.ExtraSelection()
 
-
-
+        highlighted_line.format.setBackground(QColor("#85929E"))
+        highlighted_line.format.setProperty(QTextFormat.FullWidthSelection,QVariant(True))
+        highlighted_line.cursor = self.editor.textCursor()
+        highlighted_line.cursor.clearSelection()
+        self.editor.setExtraSelections([highlighted_line])
 
 '''
 if __name__ == '__main__':
@@ -142,4 +171,5 @@ if __name__ == '__main__':
     ex.show()
 
     sys.exit(app.exec_())
+
 '''
