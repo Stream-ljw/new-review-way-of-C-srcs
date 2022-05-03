@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QPlainTextEdit, QWidget,\
-                            QVBoxLayout, QMainWindow,QHBoxLayout
+                            QVBoxLayout, QMainWindow,QHBoxLayout,QSizePolicy
 
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtCore import QRect ,Qt

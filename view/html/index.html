@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="index.css">
+    <script src="jquery.js"></script>
+    <script src="index.js"></script>
+</head>
+<body>
+    <ul id="main"></ul>
+    <script>
+        function getPyQtObj(pyqtObj) {
+            pyqtObj.getBtnJson(function(json) {
+                var arr=JSON.parse(json);
+
+                for(var i=0; i<arr.length; i++) {
+                    var $li=$(`<li>
+                        <div class="left"></div>    
+                        <div class="mid"></div> 
+                        <div class="right"></div>
+                    </li>`);
+                    $("#main").append($li);
+                    for(var j=0; j<arr[i].length; j++) {
+                        for(var key in arr[i][j]) {
+                            var btnCoord=arr[i][j][key];
+                            var $btn=$(`<button value="${btnCoord}">${key}</button>`);
+                            
+                            if(j==0)
+                                $li.children(".left").append($btn);
+                            else
+                                $li.children(".right").append($btn);
+                            $btn.on("click", function() {
+                                var button = $(this)
+
+                                var Coord = button.attr("value") 
+                                
+                                pyqtObj.getBtnCoord(Coord, function(res) {
+                                    // new QWebcChannel(
+                                    //     qt.webChannelTransport,
+                                    //     function(channel){
+                                    //         var webobj = channel.objects.webobj;
+                                    //         webobj.jump_to_line(Coord)
+                                    //     }
+                                    // )
+                                });
+                            });
+                        }
+                    }
+                }
+                displayGraph();
+            });
+        }
+    </script>
+    <script src="qwebchannel.js"></script>
+</body>
+</html>

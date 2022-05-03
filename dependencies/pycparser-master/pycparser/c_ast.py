@@ -116,6 +116,7 @@ class NodeVisitor(object):
         """ Visit a node.
         """
         method = 'visit_' + node.__class__.__name__
+        #print('c_ast : ', node.__class__.__name__, method)
         visitor = getattr(self, method, self.generic_visit)
         return visitor(node)
 
@@ -232,10 +233,11 @@ class Cast(Node):
     attr_names = ()
 
 class Compound(Node):
-    __slots__ = ('block_items', 'coord', '__weakref__')
-    def __init__(self, block_items, coord=None):
+    __slots__ = ('block_items', 'coord', 'end_coord','__weakref__')
+    def __init__(self, block_items, coord=None, end_coord=None):
         self.block_items = block_items
         self.coord = coord
+        self.end_coord = end_coord
 
     def children(self):
         nodelist = []

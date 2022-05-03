@@ -1402,7 +1402,8 @@ class CParser(PLYParser):
         """ compound_statement : brace_open block_item_list_opt brace_close """
         p[0] = c_ast.Compound(
             block_items=p[2],
-            coord=self._token_coord(p, 1))
+            coord=self._token_coord(p, 1),
+            end_coord=self._token_coord(p,3))
 
     def p_labeled_statement_1(self, p):
         """ labeled_statement : ID COLON statement """
