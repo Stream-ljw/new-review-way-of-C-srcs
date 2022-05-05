@@ -33,17 +33,14 @@
                                 $li.children(".right").append($btn);
                             $btn.on("click", function() {
                                 var button = $(this)
-
                                 var Coord = button.attr("value") 
-                                
                                 pyqtObj.getBtnCoord(Coord, function(res) {
-                                    // new QWebcChannel(
-                                    //     qt.webChannelTransport,
-                                    //     function(channel){
-                                    //         var webobj = channel.objects.webobj;
-                                    //         webobj.jump_to_line(Coord)
-                                    //     }
-                                    // )
+                                });
+                            });
+                            $btn.on("dblclick", function() {
+                                var button = $(this)
+                                pyqtObj.getBtnName(button.text(), function(res){
+
                                 });
                             });
                         }

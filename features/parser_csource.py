@@ -108,7 +108,7 @@ class FuncCallVisitor(c_ast.NodeVisitor):
 
     def visit_FuncCall(self, node):
         #self.callfunc_list.append(self.funcname)
-        print(node)
+        #print(node)
         # print(node.name.coord)
         self.FuncCall_list.append({node.name.name: node.name.coord.line})
         # with open('out.txt','w') as of:

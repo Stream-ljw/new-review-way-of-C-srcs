@@ -1,20 +1,30 @@
 import sys
 import os
+import threading
+
 sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
 # from pyqtgraph.flowchart import Flowchart
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QPlainTextEdit, QHBoxLayout, QVBoxLayout, QFileDialog, \
                             QMessageBox, QAction,  QLineEdit, QTextEdit, QLayoutItem,QMenu,QSizePolicy
-from PyQt5.QtCore import Qt, QObject, QDir, QFileInfo, QFile, QTextStream,QVariant,QUrl
+from PyQt5.QtCore import Qt, QObject, QDir, QFileInfo, QFile, QTextStream,QVariant,QUrl,pyqtSignal,pyqtSlot,QThread
 
 from PyQt5.QtGui import QColor,QTextFormat, QTextCursor,QCursor
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import *
 #from GraphicView_field import GraphicsView_field as Gf
-from WebEngineView import create_WebEngineView_field as Wf
+from WebEngineView import *
 from LineNumer_field import LineNumber_field as Lf
 from FuncDefTree_field import create_Tree_field as Tf
+from CodeText_Field import *
+from InputDialog import *
 from parser_csource import *
+
+
+# 记录每个函数是否有前置条件和后置条件
+# 该列表格式为： [{funcname: [pre-condition,post-condition]}, {funcname2:[pre,post]},{...},...]
+# 该列表初次由生成FuncDef列表时生成，后续在inputDialog更新
+g_funcVerify_info = {}
 
 class Window(QMainWindow):
 
@@ -25,19 +35,24 @@ class Window(QMainWindow):
         self.create_Actions()
         self.create_MenuBar()
 
-        self.callgraph_field = Wf()
+        self.callgraph_field = create_WebEngineView_field()
         #self.callgraph_field.selectionChanged.connect(self.jump_to_line)
-        self.editor = QPlainTextEdit() 
-        self.editor.setMinimumSize(600,600)
+        self.editor = create_TextArea() 
+        # self.editor.setMinimumSize(600,600)
         # sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         # self.editor.setSizePolicy(sizePolicy)
         # 在文本区域调用右键菜单
         self.editor.setContextMenuPolicy(Qt.CustomContextMenu)
         self.editor.customContextMenuRequested.connect(self.create_rightmenu)
-
+        self.editor.blockCountChanged.connect(self.create_callgraph) 
+        # 设置行号跳转
+        # self.signal = test_signal()
+        # print('line42 :', self.signal.JumpToLine_signal)
+        #self.signal = self.Js.JumpToLine_signal
+        g_signal.JumpToLine_signal.connect(self.editor.jump_to_line)
+        g_signal.inputDialog_signal.connect(self.create_inputDialog)
         self.lineNumberBar = Lf(self.editor)
         
-        self.editor.blockCountChanged.connect(self.create_callgraph)   
         #1. layout control
         self.layoutH = QHBoxLayout()
         self.layoutH.addWidget(self.lineNumberBar)
@@ -59,14 +74,15 @@ class Window(QMainWindow):
         #and deletes it at the approparite time. 
         self.setCentralWidget(self.mainQWiget)
 
-    def jump_to_line(self, coord):
+    # # @pyqtSlot(int, result=int)
+    # def jump_to_line(self, coord):
+    #     print("stream echo : jump to line")
+    #     doc = self.editor.document()
+    #     # 光标显示在文本区
+    #     self.editor.setFocus()
         
-        doc = self.editor.document()
-        # 光标显示在文本区
-        self.editor.setFocus()
-        
-        cursor = QTextCursor(doc.findBlockByLineNumber(coord-1))
-        self.editor.setTextCursor(cursor)
+    #     cursor = QTextCursor(doc.findBlockByLineNumber(coord-1))
+    #     self.editor.setTextCursor(cursor)
 
 
     def create_callgraph(self):
@@ -74,6 +90,12 @@ class Window(QMainWindow):
         if self.filename != '':
             # 获取 内容里面 relation_list
             relation_list, funcDef_list = generate_relationList(self.filename)
+
+            # 生成FuncVerify_list
+            for funcDef_info in funcDef_list:
+                for (key,val) in funcDef_info.items():
+                    g_funcVerify_info[key] = []
+
             # 使用GraphicsView作为callgraph
             #self.callgraph_field = Gf()
             # 使用 WebEngineView制作CallGraph
@@ -129,7 +151,32 @@ class Window(QMainWindow):
        
     # 右键菜单 点击程序验证后，创建程序验证显示结果
     # 因为该接口尚没有对应函数，所以暂时 留白
-    def create_verify_field(self):
+    # 参数说明： verify_content 可以是函数名，也可以是一段代码，分别对应双击验证和选择验证
+    def create_inputDialog(self, verify_content):
+        print("create_inputDialog")
+        # 记录当前的验证的内容, 以便后续更新对应的条件列表
+        self.current_verifyContent = verify_content
+        if verify_content not in g_funcVerify_info.keys():
+            g_funcVerify_info[verify_content] = []
+
+        # 如果不定义为类成员的话,窗口会一闪然后退出,因为 方法执行完之后就被destory了
+        self.create_inputDialog = inputDialog(g_funcVerify_info[verify_content])
+        # dialog_thread = threading.Thread(target=self.createInputDialog,args=(g_funcVerify_info[verify_content],))
+        # dialog_thread.start()
+        # self.dialog_thread = QThread()
+        # self.create_inputDialog = inputDialog(g_funcVerify_info[verify_content])
+        # self.create_inputDialog.moveToThread(self.dialog_thread)
+        # self.dialog_thread.start()
+        # self.dialog_thread.wait()
+        signal.finished.connect(self.create_verify_field)
+        print('create_inputDialog:' ,g_funcVerify_info)
+
+    def create_verify_field(self, res_list):
+        print('create_verify_field')
+        # 更新FuncVerify
+        g_funcVerify_info[self.current_verifyContent] = res_list
+        print('g_funcVerify_info:', g_funcVerify_info)
+
         self.verify_field = QPlainTextEdit()
         self.verify_field.setPlainText("这里是程序验证入口 \n验证结果将这里显示")
         self.layoutV.addWidget(self.verify_field)
@@ -146,9 +193,16 @@ class Window(QMainWindow):
 
     #Implement open file operation to openAction
     def Open_file_event(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + '/Document/' ,\
-                'Text Files (*.txt *.c *.py);; All Files (*.*)')
 
+        # path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + '../dependencies/pycparser-master/examples/c_files/' ,\
+        #         'Text Files (*.txt *.c *.py);; All Files (*.*)')
+        path, _ = QFileDialog.getOpenFileName(self, "Open File", 
+        'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/' ,
+        'Text Files (*.txt *.c *.py);; All Files (*.*)')
+        
+        # path, _ = QFileDialog.getOpenFileName(self, "Open File",'',
+        #         'Text Files (*.txt *.c *.py);; All Files (*.*)', None, QFileDialog.DontUseNativeDialog)
+        
         if path:
             inFile = QFile(path)
             
