@@ -56,7 +56,7 @@ class Window(QMainWindow):
         #1. layout control
         self.layoutH = QHBoxLayout()
         self.layoutH.addWidget(self.lineNumberBar)
-        self.layoutH.addWidget(self.editor)
+        self.layoutH.addWidget(self.editor, 3)
         #self.layoutH.addWidget(self.callgraph_field)
 
         #fc_item = self.fc.widget()
@@ -73,6 +73,11 @@ class Window(QMainWindow):
         #3. QMainWindow.setCentralWidget takes ownership of the widget pointer
         #and deletes it at the approparite time. 
         self.setCentralWidget(self.mainQWiget)
+
+        # 这里有一个令我困惑的地方，感觉对python的函数生命周期理解还不到位的原因
+        # 如果signal在create_inputDialog里创建，那么每次点击ok之后就会重复调用create_verify_field从而添加好几次该窗口
+        # 待解决
+        signal.finished.connect(self.create_verify_field)
 
     # # @pyqtSlot(int, result=int)
     # def jump_to_line(self, coord):
@@ -104,14 +109,21 @@ class Window(QMainWindow):
             self.callgraph_field.create_call_graph(relation_list)
             # self.callgraph_field.selectionChanged.connect
             self.funcTree = Tf(funcDef_list)
-            self.layoutH.insertWidget(0,self.funcTree)
+
+            # =================================================
+            # 为了解决 添加内容后 重复添加treewidget从而界面崩坏的问题
+            if self.layoutH.count() == 4:
+                self.layoutH.removeItem(self.layoutH.itemAt(0))
+            # ==================================================
+
+            self.layoutH.insertWidget(0,self.funcTree, 0)
             # 删除原来的layout
             # print(self.layoutH.count())
             if self.layoutH.count() > 3:
                 self.layoutH.removeItem(self.layoutH.itemAt(3))
 
             # 实现动态的更新 call graph
-            self.layoutH.insertWidget(3,self.callgraph_field)
+            self.layoutH.insertWidget(3,self.callgraph_field, 2)
             #self.create_Flowchart_field()
 
     # create submenu and add action like open file
@@ -124,6 +136,10 @@ class Window(QMainWindow):
         self.fileMenu.addAction(self.openAction)
         self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.exitAction)
+
+        self.editMenu = self.menubar_field.addMenu('&edit')
+        self.editMenu = self.menubar_field.addMenu('&view')
+        self.editMenu = self.menubar_field.addMenu('&help')
 
     def create_rightmenu(self):
         # 右键菜单显示
@@ -147,8 +163,28 @@ class Window(QMainWindow):
 
         # 右键菜单部分的Actions
         self.verifyAction = QAction('程序验证',self)
-        self.verifyAction.triggered.connect(self.create_verify_field)
-       
+        self.verifyAction.triggered.connect(self.create_inputDialog)
+    
+    def create_verify_field(self, res_list):
+            print('inputDialog finished , create_verify_field')
+            # 更新FuncVerify
+            g_funcVerify_info[self.current_verifyContent] = res_list
+            print('g_funcVerify_info:', g_funcVerify_info)
+
+            self.verify_field = QPlainTextEdit()
+            textToBeShowed = "这里是程序验证入口 \n验证结果将这里显示 \n" + \
+                            'Pre-condition: '+ str(res_list[0]) +'\n' + \
+                            'Post-condition: '+ str(res_list[1]) 
+            self.verify_field.setPlainText(textToBeShowed)
+            # =====================================================
+            # 动态添加可视化验证结果窗口
+            print('layoutV items count:', self.layoutV.count())
+            if self.layoutV.count() == 3:
+                self.layoutV.removeItem(self.layoutV.itemAt(2))
+
+            self.layoutV.addWidget(self.verify_field)
+
+
     # 右键菜单 点击程序验证后，创建程序验证显示结果
     # 因为该接口尚没有对应函数，所以暂时 留白
     # 参数说明： verify_content 可以是函数名，也可以是一段代码，分别对应双击验证和选择验证
@@ -160,26 +196,21 @@ class Window(QMainWindow):
             g_funcVerify_info[verify_content] = []
 
         # 如果不定义为类成员的话,窗口会一闪然后退出,因为 方法执行完之后就被destory了
-        self.create_inputDialog = inputDialog(g_funcVerify_info[verify_content])
+        self.inputDialog = inputDialog(g_funcVerify_info[verify_content])
+        # python 自带的thread方法
         # dialog_thread = threading.Thread(target=self.createInputDialog,args=(g_funcVerify_info[verify_content],))
         # dialog_thread.start()
+        # 如何用pyqt QThread方法
         # self.dialog_thread = QThread()
         # self.create_inputDialog = inputDialog(g_funcVerify_info[verify_content])
         # self.create_inputDialog.moveToThread(self.dialog_thread)
         # self.dialog_thread.start()
         # self.dialog_thread.wait()
-        signal.finished.connect(self.create_verify_field)
-        print('create_inputDialog:' ,g_funcVerify_info)
-
-    def create_verify_field(self, res_list):
-        print('create_verify_field')
-        # 更新FuncVerify
-        g_funcVerify_info[self.current_verifyContent] = res_list
-        print('g_funcVerify_info:', g_funcVerify_info)
-
-        self.verify_field = QPlainTextEdit()
-        self.verify_field.setPlainText("这里是程序验证入口 \n验证结果将这里显示")
-        self.layoutV.addWidget(self.verify_field)
+       
+        # print('create_inputDialog:' ,g_funcVerify_info)
+        # 不能定义在这里！我一时想不清楚
+        # signal.finished.connect(self.create_verify_field)
+   
 
     #Implement create new plain text file to newAcion
     def New_file_event(self):
@@ -208,7 +239,7 @@ class Window(QMainWindow):
             
             if inFile.open(QFile.ReadWrite | QFile.Text):
                 text = inFile.readAll()
-                
+
                 try:
                     text = str(text, encoding = 'utf-8')
                 except TypeError:
@@ -272,7 +303,7 @@ class Window(QMainWindow):
     def paintEvent(self, event):
         highlighted_line = QTextEdit.ExtraSelection()
 
-        highlighted_line.format.setBackground(QColor("#85929E"))
+        highlighted_line.format.setBackground(QColor("#E8F6F3"))
         highlighted_line.format.setProperty(QTextFormat.FullWidthSelection,QVariant(True))
         highlighted_line.cursor = self.editor.textCursor()
         highlighted_line.cursor.clearSelection()

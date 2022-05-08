@@ -19,9 +19,10 @@ class create_Tree_field(QTreeWidget):
             node.setText(0,funcname)
             self.addTopLevelItem(node)
 
-        self.setMinimumSize(100,0)
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-        self.setSizePolicy(sizePolicy)
+        #self.setMinimumSize(130,600)
+        self.setFixedWidth(150)
+        # sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        # self.setSizePolicy(sizePolicy)
         # tree_field = QTreeWidget(self)
         # #设置列
         # tree_field.setColumnCount(1)
@@ -44,25 +45,25 @@ class create_Tree_field(QTreeWidget):
         print('To be continue ! ')
 
 
-if __name__ == '__main__':
-    filename = 'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/year.c'
-    visitor = FuncDefVisitor(filename)
-    funcdef = visitor.return_FuncDefInfoList()
+# if __name__ == '__main__':
+#     filename = 'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/year.c'
+#     visitor = FuncDefVisitor(filename)
+#     funcdef = visitor.return_FuncDefInfoList()
 
-    app = QApplication(sys.argv)
+#     app = QApplication(sys.argv)
 
-    window = QMainWindow()
-    qw = QWidget()
-    text = QPlainTextEdit()
-    tree = create_Tree_field(funcdef)
-    layout = QHBoxLayout()
-    layout.addWidget(tree)
-    layout.addWidget(text)
-    qw.setLayout(layout)
-    window.setCentralWidget(qw)
-    window.show()
+#     window = QMainWindow()
+#     qw = QWidget()
+#     text = QPlainTextEdit()
+#     tree = create_Tree_field(funcdef)
+#     layout = QHBoxLayout()
+#     layout.addWidget(tree)
+#     layout.addWidget(text)
+#     qw.setLayout(layout)
+#     window.setCentralWidget(qw)
+#     window.show()
 
-    sys.exit(app.exec_())
+#     sys.exit(app.exec_())
 
         
 

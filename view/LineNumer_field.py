@@ -76,7 +76,7 @@ class LineNumber_field(QWidget):
                 
                 painter.setFont(font)
                 #用 painter.drawText方法画出 数字,数字要加1 
-                Paint_rect = QRect(0, block_top, self.width(), self.editor.fontMetrics().height())
+                Paint_rect = QRect(0, block_top+5, self.width(), self.editor.fontMetrics().height())
                 painter.drawText(Paint_rect, Qt.AlignRight, str(blockNum+1))
             
             # 下一行, 如果需要的话

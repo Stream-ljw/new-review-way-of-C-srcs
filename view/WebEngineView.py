@@ -21,9 +21,9 @@ class create_WebEngineView_field(QWidget):
     #     browser.page().setWebChannel(channel)
     def __init__(self):
         super().__init__()
-        self.setMinimumSize(300,300)
-        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        self.setSizePolicy(sizePolicy)
+        self.setMinimumSize(400,600)
+        # sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        # self.setSizePolicy(sizePolicy)
         self.relation_list = []
     
     def create_call_graph(self, relation_list):
@@ -45,7 +45,7 @@ class global_signal(QObject):
     JumpToLine_signal = pyqtSignal(int)
 
     inputDialog_signal = pyqtSignal(str)
-    print('test_signal:', JumpToLine_signal)
+    #print('test_signal:', JumpToLine_signal)
 
 g_signal = global_signal()
 
@@ -72,17 +72,17 @@ class JsObj(QObject):
         self.btn_coord = int(coord)
         # jump_to_line(self.btn_coord)
         
-        print("emit()")
+        #print("emit()")
         g_signal.JumpToLine_signal.emit(self.btn_coord)
         #print('getbtn:',self.signal.JumpToLine_signal)
 
-        print("this is getBtnCoord", self.btn_coord)
+        print("getBtnCoord", self.btn_coord)
         #return coord
     
     @pyqtSlot(str, result=str)
     def getBtnName(self,nodeName):
-        print('btn double click')
-        print(nodeName)
+        print('btn double click',nodeName)
+        #print(nodeName)
         g_signal.inputDialog_signal.emit(nodeName)
     
     def set_relation_list(self, relationList):

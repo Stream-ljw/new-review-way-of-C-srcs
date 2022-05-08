@@ -15,7 +15,6 @@ class inputDialog(QWidget):
 
     def __init__(self, condition):
         super().__init__()
-        print('init...')
         if len(condition) == 0:
             self.condition = ['','']
         else:
@@ -25,7 +24,6 @@ class inputDialog(QWidget):
         self.show()
     
     def initUI(self):
-        print('initUI...')
         self.setMinimumSize(350,100)
         
         self.setWindowTitle('输入条件')
@@ -61,7 +59,6 @@ class inputDialog(QWidget):
         layoutV.addLayout(layoutH)
 
         self.setLayout(layoutV)
-        print('endUI...')
 
     def clickBtn(self):
 
@@ -74,11 +71,11 @@ class inputDialog(QWidget):
             self.condition[1] = post_text
         
         # 调用程序验证接口
-        print(self.condition)
+        #print(self.condition)
 
         # 关闭窗口
         self.close()
-
+        print('clickBtn emit')
         signal.finished.emit(self.condition)
 
     def return_condition(self):
