@@ -159,7 +159,7 @@ class Window(QMainWindow):
             # 如果文本区存在错误，则放弃生成调用关系图，或者更新调用关系图
             try:
                 # 获取 内容里面 relation_list
-                relation_list, funcDef_list = generate_relationList(self.tmp_file_path)
+                relation_list, funcDef_list = new_relationList(self.tmp_file_path)
 
                 # 生成FuncVerify_list
                 for funcDef_info in funcDef_list:

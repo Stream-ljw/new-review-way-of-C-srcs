@@ -2,6 +2,8 @@
 
 import sys
 import os
+
+from sqlalchemy import false, func, true
 sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master')
 sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
 
@@ -86,8 +88,11 @@ class FuncDefVisitor(c_ast.NodeVisitor):
     def get_func_defs(self):
         # Note that cpp is used. Provide a path to your own cpp or
         # make sure one exists in PATH.
+        # cpp_args的路径是 相对当前执行的路径
         self.ast = parse_file(self.filepath, use_cpp=True,
-                        cpp_args=r'-Iutils/fake_libc_include')
+                        cpp_args=r'-I../dependencies/pycparser-master/utils/fake_libc_include')
+        # parser = c_parser.CParser()
+        # self.ast = parser.parse(self.filepath)
 
         self.visit(self.ast)
     
@@ -165,16 +170,105 @@ def generate_relationList(filename):
     return relation_list,FuncDefList
 
 
+def haveCallFunc(funcname, relList):
+    for funcinfo in relList:
+        (key,val), = funcinfo[0].items()
+        if key == funcname and len(funcinfo) >= 2:
+            return true,funcinfo
+    
+    return false, []
+
+
+# 我这里的递归绝了，真的太绝了
+# 递归的判断后续的函数是否有调用其他函数
+# 参数解释：
+# tmpList ：每次要判断的函数列表
+# relList ：relationList 函数调用关系表，用来查询其中的函数是否有调用，不发生改变
+# tmp_relList： relationList复制版，每次符合’被调用且调用了其他函数‘会从中删除
+# finalList ： 每次符合’被调用且调用了其他函数‘会添加到其中
+# notshow ： 每次判断 “被调用但是没有调用其他函数” 会加入到其中，用来后续判断是否将tmp_relList中的
+# 函数添加到final里面
+def getFunc(tmpList, relList, tmp_relList,finalList, notshow):
+    final = finalList
+    tmp = tmp_relList
+    notshow = notshow
+    #print('final: ',final)
+    #print('tmp: ',tmp)
+    # 从main函数的第1个调用函数，也就是列表的第二位开始判断
+    for IndexOfdictItem in range(1,len(tmpList)):
+        (key,val), = tmpList[IndexOfdictItem].items()
+        #print(key, ' : ', tmpList[IndexOfdictItem])
+        res, funclist = haveCallFunc(key,relList)
+        #print(res,' : ',funclist)
+        if res == true :
+            final.append(funclist)
+            tmp.remove(funclist)
+            getFunc(funclist, relList, tmp,final, notshow)
+        else:
+            # 这是被调用 但是没有调用其他函数
+            notshow.append(tmpList[IndexOfdictItem])
+    return final,tmp,notshow
+
+# 进一步调整函数调用关系图逻辑
+# 优先显示 main，且接下来依次显示main中被调用函数的其他关系
+# 如果函数只有被调用，没有调用其他函数，则不单独显示
+# 如果函数既没有被调用，也没有调用其他函数，单独显示
+# 参照
+# [
+#  [{'foo': 1}], 
+#  [{'foo1': 6}], 
+#  [{'hello': 11}], 
+#  [{'foo2': 17}], 
+#  [{'foo3': 22}], 
+#  [{'maxout_in': 27}, {'foo': 29}, {'foo': 30}], 
+#  [{'main': 34}, {'maxout_in': 40}]
+# ]
+def new_relationList(filename):
+    final_relationList = []
+    FuncNotToBeShowed = []
+    relList, FuncDefList = generate_relationList(filename)
+    tmp_relList = relList
+    tmpList = []
+    # 判断是否有main函数
+    for funcInfo in tmp_relList:
+        (key,val), = funcInfo[0].items()
+        if key == 'main':
+            final_relationList.append(funcInfo)
+            tmpList = funcInfo
+            tmp_relList.remove(funcInfo)
+    # 不存在main
+    if tmpList == []:
+        return relList,FuncDefList
+    else:
+        # 如果有main函数，则递归判断后续函数的情况
+        final_relationList, tmp_relList, FuncNotToBeShowed = getFunc(tmpList,relList,tmp_relList,final_relationList,FuncNotToBeShowed)
+
+    # print(tmp_relList)
+    # print(FuncNotToBeShowed)
+    FuncNotToBeShowed_name = []
+    #过滤掉那些被调用但是没有调用其他函数的
+    for item in FuncNotToBeShowed:
+        (key,val), = item.items()
+        FuncNotToBeShowed_name.append(key)
+
+    # 剩下的都是既没有被调用，也没有调用其他的函数
+    for listitem in tmp_relList:
+        (key,val), = listitem[0].items()
+        if key not in FuncNotToBeShowed_name:
+            final_relationList.append(listitem)
+    print(final_relationList)
+    return final_relationList, FuncDefList
+    
 # 生成 函数调用矩阵， 方法就是 横轴 数轴都为 函数名，如果其中有调用关系那么将位置坐标(index(func1) , index(func2))置为1
 # 这是为了以后制作更复杂的调用关系图所用。
-# 因为制作关系图的方法还未掌握，只能绘制简单的两层调用，所以暂时没有用 
+# 因为如何更好显示关系图的方法还未找到，只能绘制简单的两层调用，所以暂时没有用 
 # 尚未 完成
 def generate_FuncCallMatrics():
     print('To be continued!')
 
 if __name__ == '__main__':
 
-    filename = 'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/year.c'
+    filename = 'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/funky.c'
 
     # visit = FuncDefVisitor(filename)
     # infoList = visit.return_FuncDefInfoList()
@@ -185,7 +279,8 @@ if __name__ == '__main__':
     #     print(key, ' : ',value.line)
 
 
-    generate_relationList(filename)
+    #generate_relationList(filename)
+    new_relationList(filename)
 
     
     # visit = FuncCallVisitor(filename)
