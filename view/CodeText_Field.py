@@ -16,5 +16,5 @@ class create_TextArea(QPlainTextEdit):
         doc = self.document()
         # 光标显示在文本区
         self.setFocus()
-        cursor = QTextCursor(doc.findBlockByLineNumber(coord))
+        cursor = QTextCursor(doc.findBlockByLineNumber(coord-1))
         self.setTextCursor(cursor)

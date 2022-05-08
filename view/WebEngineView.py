@@ -19,17 +19,19 @@ class create_WebEngineView_field(QWidget):
     #     channel.registerObject("obj", self.obj)
     #     browser.load(QUrl.fromLocalFile(os.getcwd() + "/html/index.html"))
     #     browser.page().setWebChannel(channel)
-    def __init__(self):
+    def __init__(self, relation_list):
         super().__init__()
         self.setMinimumSize(400,600)
         # sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         # self.setSizePolicy(sizePolicy)
-        self.relation_list = []
-    
-    def create_call_graph(self, relation_list):
+        #self.relation_list = []
         self.relation_list = relation_list
+        self.create_call_graph()
+    
+    def create_call_graph(self):
+        #self.relation_list = relation_list
         self.obj=JsObj()
-        self.obj.set_relation_list(relation_list)
+        self.obj.set_relation_list(self.relation_list)
         browser = QWebEngineView(self)
         channel=QWebChannel(browser.page())
         channel.registerObject("obj", self.obj)

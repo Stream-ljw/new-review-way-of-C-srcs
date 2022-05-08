@@ -2,6 +2,8 @@ import sys
 import os
 import threading
 
+from nbformat import write
+
 sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
 # from pyqtgraph.flowchart import Flowchart
 
@@ -30,12 +32,24 @@ class Window(QMainWindow):
 
     def __init__(self):
         super(Window,self).__init__()
-           
+
+        # 在当前目录创建一个临时的隐藏文件，用于实时保存文本区内容
+        # 从而实现动态生成函数调用关系图
+        self.tmp_file_path = os.getcwd()+'/_tmp.c'
+        if os.path.exists(self.tmp_file_path):
+            os.remove(self.tmp_file_path)
+        # if not os.path.exists(tmp_file_path):
+        # open操作可快捷的创建一个文件，如果该文件不存在的话
+        self.tmp_inVisible_file = open(self.tmp_file_path, 'w').close()
+        # 设置为隐藏文件
+        os.system('attrib +h ' + self.tmp_file_path)
+        print(self.tmp_file_path)
+        
         self.filename = ""
         self.create_Actions()
         self.create_MenuBar()
 
-        self.callgraph_field = create_WebEngineView_field()
+        #self.callgraph_field = create_WebEngineView_field()
         #self.callgraph_field.selectionChanged.connect(self.jump_to_line)
         self.editor = create_TextArea() 
         # self.editor.setMinimumSize(600,600)
@@ -79,53 +93,15 @@ class Window(QMainWindow):
         # 待解决
         signal.finished.connect(self.create_verify_field)
 
-    # # @pyqtSlot(int, result=int)
-    # def jump_to_line(self, coord):
-    #     print("stream echo : jump to line")
-    #     doc = self.editor.document()
-    #     # 光标显示在文本区
-    #     self.editor.setFocus()
-        
-    #     cursor = QTextCursor(doc.findBlockByLineNumber(coord-1))
-    #     self.editor.setTextCursor(cursor)
+    # 主窗口关闭
+    def closeEvent(self,e):
+        print("window closed")
+
+        #前提条件是该文件是closed
+        os.remove(str(self.tmp_file_path))
 
 
-    def create_callgraph(self):
-
-        if self.filename != '':
-            # 获取 内容里面 relation_list
-            relation_list, funcDef_list = generate_relationList(self.filename)
-
-            # 生成FuncVerify_list
-            for funcDef_info in funcDef_list:
-                for (key,val) in funcDef_info.items():
-                    g_funcVerify_info[key] = []
-
-            # 使用GraphicsView作为callgraph
-            #self.callgraph_field = Gf()
-            # 使用 WebEngineView制作CallGraph
-            print(funcDef_list)
-            # self.callgraph_field = Wf(relation_list)
-            self.callgraph_field.create_call_graph(relation_list)
-            # self.callgraph_field.selectionChanged.connect
-            self.funcTree = Tf(funcDef_list)
-
-            # =================================================
-            # 为了解决 添加内容后 重复添加treewidget从而界面崩坏的问题
-            if self.layoutH.count() == 4:
-                self.layoutH.removeItem(self.layoutH.itemAt(0))
-            # ==================================================
-
-            self.layoutH.insertWidget(0,self.funcTree, 0)
-            # 删除原来的layout
-            # print(self.layoutH.count())
-            if self.layoutH.count() > 3:
-                self.layoutH.removeItem(self.layoutH.itemAt(3))
-
-            # 实现动态的更新 call graph
-            self.layoutH.insertWidget(3,self.callgraph_field, 2)
-            #self.create_Flowchart_field()
-
+    
     # create submenu and add action like open file
     def create_MenuBar(self):
         
@@ -165,6 +141,64 @@ class Window(QMainWindow):
         self.verifyAction = QAction('程序验证',self)
         self.verifyAction.triggered.connect(self.create_inputDialog)
     
+
+    def create_callgraph(self):
+        # 文本区发生变化时：实时保存到tmp_inVisible_file
+        content = self.editor.toPlainText()
+        # new操作时程序崩溃，所以提前进行检查
+        if content == '':
+            pass
+        else:
+            os.system('attrib -h ' + self.tmp_file_path)
+            with open(self.tmp_file_path, 'w') as tmp_inVisible_file:
+                tmp_inVisible_file.write(str(content))
+            os.system('attrib +h ' + self.tmp_file_path)
+
+            # 如果代码出现错误，则程序崩溃
+            # 解决方法： try except
+            # 如果文本区存在错误，则放弃生成调用关系图，或者更新调用关系图
+            try:
+                # 获取 内容里面 relation_list
+                relation_list, funcDef_list = generate_relationList(self.tmp_file_path)
+
+                # 生成FuncVerify_list
+                for funcDef_info in funcDef_list:
+                    for (key,val) in funcDef_info.items():
+                        g_funcVerify_info[key] = []
+
+                # 使用GraphicsView作为callgraph
+                #self.callgraph_field = Gf()
+                # 使用 WebEngineView制作CallGraph
+                print(funcDef_list)
+                print(relation_list)
+                self.callgraph_field = create_WebEngineView_field(relation_list)
+                #self.callgraph_field.create_call_graph(relation_list)
+                # self.callgraph_field.selectionChanged.connect()
+                self.funcTree = Tf(funcDef_list)
+
+                # =================================================
+                # 为了解决 添加内容后 重复添加treewidget从而界面崩坏的问题
+                if self.layoutH.count() == 4:
+                    self.layoutH.removeItem(self.layoutH.itemAt(0))
+                # ==================================================
+
+                self.layoutH.insertWidget(0,self.funcTree, 0)
+                # 删除原来的layout
+                # print(self.layoutH.count())
+                if self.layoutH.count() > 3:
+                    self.layoutH.removeItem(self.layoutH.itemAt(3))
+
+                # 实现动态的更新 call graph
+                self.layoutH.insertWidget(3,self.callgraph_field, 2)
+                # self.create_Flowchart_field()
+            except Exception as e:
+                # print('error occured,pass')
+                # 错误跟踪， 保留功能
+                errorMes = e.args 
+                line = str(errorMes).split(':')
+                print(line)
+
+
     def create_verify_field(self, res_list):
             print('inputDialog finished , create_verify_field')
             # 更新FuncVerify
@@ -240,6 +274,11 @@ class Window(QMainWindow):
             if inFile.open(QFile.ReadWrite | QFile.Text):
                 text = inFile.readAll()
 
+                os.system('attrib -h ' + self.tmp_file_path)
+                with open(self.tmp_file_path, 'w') as tmp_inVisible_file:
+                    tmp_inVisible_file.write(str(text))
+                os.system('attrib +h ' + self.tmp_file_path)
+
                 try:
                     text = str(text, encoding = 'utf-8')
                 except TypeError:
@@ -251,7 +290,7 @@ class Window(QMainWindow):
                 
                 # sync fname to WindowTitile
                 self.setWindowTitle(self.fname + '[*]')
-                self.create_callgraph()
+                #self.create_callgraph()
     
     #Implement save file operation to saveAction
     def Save_file_event(self):
