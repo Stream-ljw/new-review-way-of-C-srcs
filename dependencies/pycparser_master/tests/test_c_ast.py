@@ -1,3 +1,5 @@
+import pprint
+import re
 import sys
 import unittest
 import weakref
@@ -14,11 +16,11 @@ class Test_c_ast(unittest.TestCase):
             left=c_ast.Constant(type='int', value='6'),
             right=c_ast.ID(name='joe'))
 
-        self.assertIsInstance(b1.left, c_ast.Constant)
+        self.failUnless(isinstance(b1.left, c_ast.Constant))
         self.assertEqual(b1.left.type, 'int')
         self.assertEqual(b1.left.value, '6')
 
-        self.assertIsInstance(b1.right, c_ast.ID)
+        self.failUnless(isinstance(b1.right, c_ast.ID))
         self.assertEqual(b1.right.name, 'joe')
 
     def test_weakref_works_on_nodes(self):
@@ -34,6 +36,7 @@ class Test_c_ast(unittest.TestCase):
         cref = wr()
         self.assertEqual(cref.line, 2)
         self.assertEqual(weakref.getweakrefcount(coord), 1)
+
 
 
 class TestNodeVisitor(unittest.TestCase):
@@ -91,57 +94,7 @@ class TestNodeVisitor(unittest.TestCase):
         cv.visit(comp)
 
         self.assertEqual(cv.values,
-                         ['5.6', 't', '5.6', 't', 't', '5.6', 't'])
-
-    def test_repr(self):
-        c1 = c_ast.Constant(type='float', value='5.6')
-        c2 = c_ast.Constant(type='char', value='t')
-
-        b1 = c_ast.BinaryOp(
-            op='+',
-            left=c1,
-            right=c2)
-
-        b2 = c_ast.BinaryOp(
-            op='-',
-            left=b1,
-            right=c2)
-
-        comp = c_ast.Compound(
-            block_items=[b1, b2, c1, c2])
-
-        expected = ("Compound(block_items=[BinaryOp(op='+',\n"
-                    "                               left=Constant(type='float',\n"
-                    "                                             value='5.6'\n"
-                    "                                             ),\n"
-                    "                               right=Constant(type='char',\n"
-                    "                                              value='t'\n"
-                    "                                              )\n"
-                    "                               ),\n"
-                    "                      BinaryOp(op='-',\n"
-                    "                               left=BinaryOp(op='+',\n"
-                    "                                             left=Constant(type='float',\n"
-                    "                                                           value='5.6'\n"
-                    "                                                           ),\n"
-                    "                                             right=Constant(type='char',\n"
-                    "                                                            value='t'\n"
-                    "                                                            )\n"
-                    "                                             ),\n"
-                    "                               right=Constant(type='char',\n"
-                    "                                              value='t'\n"
-                    "                                              )\n"
-                    "                               ),\n"
-                    "                      Constant(type='float',\n"
-                    "                               value='5.6'\n"
-                    "                               ),\n"
-                    "                      Constant(type='char',\n"
-                    "                               value='t'\n"
-                    "                               )\n"
-                    "                     ]\n"
-                    "         )")
-
-        self.assertEqual(repr(comp),
-                         expected)
+            ['5.6', 't', '5.6', 't', 't', '5.6', 't'])
 
 
 if __name__ == '__main__':

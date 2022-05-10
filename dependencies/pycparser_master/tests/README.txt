@@ -1,1 +1,1 @@
-Run 'python -m unittest discover' from the root pycparser directory
+Run 'python tests/all_tests.py' from the root pycparser directory

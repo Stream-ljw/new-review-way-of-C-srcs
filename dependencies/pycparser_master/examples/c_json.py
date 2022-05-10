@@ -119,17 +119,20 @@ def to_dict(node):
         if child_attr not in result:
             result[child_attr] = None
 
+    print(result)
     return result
 
 
 def to_json(node, **kwargs):
     """ Convert ast node to json string """
+    #print(node)
     return json.dumps(to_dict(node), **kwargs)
 
 
 def file_to_dict(filename):
     """ Load C file into dict representation of ast """
     ast = parse_file(filename, use_cpp=True)
+    #print(str(ast))
     return to_dict(ast)
 
 
@@ -178,9 +181,12 @@ def from_dict(node_dict):
     for key, value in node_dict.items():
         if key == 'coord':
             objs[key] = _parse_coord(value)
+        elif key == 'end_coord':
+            objs[key] = _parse_coord(value)
         else:
             objs[key] = _convert_to_obj(value)
 
+    print(objs)
     # Use keyword parameters, which works thanks to beautifully consistent
     # ast Node initializers.
     return klass(**objs)
@@ -198,6 +204,6 @@ if __name__ == "__main__":
         # Do trip from C -> ast -> dict -> ast -> json, then print.
         ast_dict = file_to_dict(sys.argv[1])
         ast = from_dict(ast_dict)
-        print(to_json(ast, sort_keys=True, indent=4))
+        # print(to_json(ast, sort_keys=True, indent=4))
     else:
         print("Please provide a filename as argument")

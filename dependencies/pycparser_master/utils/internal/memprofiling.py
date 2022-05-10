@@ -1,6 +1,8 @@
+import sys
 from pycparser import parse_file
 from pycparser.c_ast import *
-from pycparser.c_parser import CParser
+from pycparser.c_parser import CParser, Coord, ParseError
+from pycparser.c_lexer import CLexer
 
 
 def expand_decl(decl):

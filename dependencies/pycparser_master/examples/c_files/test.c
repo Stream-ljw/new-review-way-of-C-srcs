@@ -1,3 +1,25 @@
+char foo(void)
+{
+    return '1';
+}
+
+int maxout_in(int paste, int matrix)
+{
+    char o = foo();
+    char p = foo();
+    return  matrix * 5 - paste;
+}
+
+int main()
+{
+    auto char* multi = "a multi";
+    
+    int paste = 1 ;
+    int matrix = 2;
+    res = maxout_in(paste, matrix);
+    return 0;
+}
+
 //----------------------------------------------------------------
 // Statically-allocated memory manager
 //
@@ -204,3 +226,5 @@ void memmgr_free(void* ap)
 
     freep = p;
 }
+
+

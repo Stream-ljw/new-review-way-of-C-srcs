@@ -1,10 +1,10 @@
 #-----------------------------------------------------------------
 # plyparser.py
 #
-# PLYParser class and other utilities for simplifying programming
+# PLYParser class and other utilites for simplifying programming
 # parsers with PLY
 #
-# Eli Bendersky [https://eli.thegreenplace.net/]
+# Eli Bendersky [http://eli.thegreenplace.net]
 # License: BSD
 #-----------------------------------------------------------------
 
@@ -53,7 +53,7 @@ class PLYParser(object):
                 column=column)
 
     def _token_coord(self, p, token_idx):
-        """ Returns the coordinates for the YaccProduction object 'p' indexed
+        """ Returns the coordinates for the YaccProduction objet 'p' indexed
             with 'token_idx'. The coordinate includes the 'lineno' and
             'column'. Both follow the lex semantic, starting from 1.
         """

@@ -9,7 +9,7 @@
 # information from the AST.
 # It helps to have the pycparser/_c_ast.cfg file in front of you.
 #
-# Eli Bendersky [https://eli.thegreenplace.net/]
+# Eli Bendersky [http://eli.thegreenplace.net]
 # License: BSD
 #-----------------------------------------------------------------
 from __future__ import print_function
@@ -20,7 +20,7 @@ import sys
 #
 sys.path.extend(['.', '..'])
 
-from pycparser import c_parser
+from pycparser import c_parser, c_ast
 
 # This is some C source to parse. Note that pycparser must begin
 # at the top level of the C file, i.e. with either declarations

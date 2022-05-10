@@ -77,10 +77,6 @@ class TestCLexerNoErrors(unittest.TestCase):
         self.assertTokensTypes('0xf7', ['INT_CONST_HEX'])
         self.assertTokensTypes('0b110', ['INT_CONST_BIN'])
         self.assertTokensTypes('0x01202AAbbf7Ul', ['INT_CONST_HEX'])
-        self.assertTokensTypes("'12'", ['INT_CONST_CHAR'])
-        self.assertTokensTypes("'123'", ['INT_CONST_CHAR'])
-        self.assertTokensTypes("'1AB4'", ['INT_CONST_CHAR'])
-        self.assertTokensTypes(r"'1A\n4'", ['INT_CONST_CHAR'])
 
         # no 0 before x, so ID catches it
         self.assertTokensTypes('xf7', ['ID'])
@@ -90,11 +86,6 @@ class TestCLexerNoErrors(unittest.TestCase):
 
     def test_special_names(self):
         self.assertTokensTypes('sizeof offsetof', ['SIZEOF', 'OFFSETOF'])
-
-    def test_new_keywords(self):
-        self.assertTokensTypes('_Bool', ['_BOOL'])
-        self.assertTokensTypes('_Atomic', ['_ATOMIC'])
-        self.assertTokensTypes('_Alignas _Alignof', ['_ALIGNAS', '_ALIGNOF'])
 
     def test_floating_constants(self):
         self.assertTokensTypes('1.5f', ['FLOAT_CONST'])
@@ -122,13 +113,9 @@ class TestCLexerNoErrors(unittest.TestCase):
     def test_char_constants(self):
         self.assertTokensTypes(r"""'x'""", ['CHAR_CONST'])
         self.assertTokensTypes(r"""L'x'""", ['WCHAR_CONST'])
-        self.assertTokensTypes(r"""u8'x'""", ['U8CHAR_CONST'])
-        self.assertTokensTypes(r"""u'x'""", ['U16CHAR_CONST'])
-        self.assertTokensTypes(r"""U'x'""", ['U32CHAR_CONST'])
         self.assertTokensTypes(r"""'\t'""", ['CHAR_CONST'])
         self.assertTokensTypes(r"""'\''""", ['CHAR_CONST'])
         self.assertTokensTypes(r"""'\?'""", ['CHAR_CONST'])
-        self.assertTokensTypes(r"""'\0'""", ['CHAR_CONST'])
         self.assertTokensTypes(r"""'\012'""", ['CHAR_CONST'])
         self.assertTokensTypes(r"""'\x2f'""", ['CHAR_CONST'])
         self.assertTokensTypes(r"""'\x2f12'""", ['CHAR_CONST'])
@@ -150,9 +137,6 @@ class TestCLexerNoErrors(unittest.TestCase):
     def test_string_literal(self):
         self.assertTokensTypes('"a string"', ['STRING_LITERAL'])
         self.assertTokensTypes('L"ing"', ['WSTRING_LITERAL'])
-        self.assertTokensTypes('u8"ing"', ['U8STRING_LITERAL'])
-        self.assertTokensTypes('u"ing"', ['U16STRING_LITERAL'])
-        self.assertTokensTypes('U"ing"', ['U32STRING_LITERAL'])
         self.assertTokensTypes(
             '"i am a string too \t"',
             ['STRING_LITERAL'])
@@ -164,24 +148,6 @@ class TestCLexerNoErrors(unittest.TestCase):
             ['STRING_LITERAL'])
         self.assertTokensTypes(
             '"\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123"',
-            ['STRING_LITERAL'])
-        # Note: a-zA-Z and '.-~^_!=&;,' are allowed as escape chars to support #line
-        # directives with Windows paths as filenames (..\..\dir\file)
-        self.assertTokensTypes(
-            r'"\x"',
-            ['STRING_LITERAL'])
-        self.assertTokensTypes(
-            r'"\a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z\A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z"',
-            ['STRING_LITERAL'])
-        self.assertTokensTypes(
-            r'"C:\x\fa\x1e\xited"',
-            ['STRING_LITERAL'])
-        # The lexer is permissive and allows decimal escapes (not just octal)
-        self.assertTokensTypes(
-            r'"jx\9"',
-            ['STRING_LITERAL'])
-        self.assertTokensTypes(
-            r'"fo\9999999"',
             ['STRING_LITERAL'])
 
     def test_mess(self):
@@ -462,24 +428,14 @@ class TestCLexerErrors(unittest.TestCase):
     def test_char_constants(self):
         self.assertLexerError("'", ERR_UNMATCHED_QUOTE)
         self.assertLexerError("'b\n", ERR_UNMATCHED_QUOTE)
-        self.assertLexerError("'\\xaa\n'", ERR_UNMATCHED_QUOTE)
 
-        self.assertLexerError(r"'123\12a'", ERR_INVALID_CCONST)
-        self.assertLexerError(r"'123\xabg'", ERR_INVALID_CCONST)
-        self.assertLexerError("''", ERR_INVALID_CCONST)
-        self.assertLexerError("'abcjx'", ERR_INVALID_CCONST)
+        self.assertLexerError("'jx'", ERR_INVALID_CCONST)
         self.assertLexerError(r"'\*'", ERR_INVALID_CCONST)
 
     def test_string_literals(self):
-        self.assertLexerError(r'"jx\`"', ERR_STRING_ESCAPE)
+        self.assertLexerError(r'"jx\9"', ERR_STRING_ESCAPE)
         self.assertLexerError(r'"hekllo\* on ix"', ERR_STRING_ESCAPE)
         self.assertLexerError(r'L"hekllo\* on ix"', ERR_STRING_ESCAPE)
-        # Should not suffer from slow backtracking
-        self.assertLexerError(r'"\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\`\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123"', ERR_STRING_ESCAPE)
-        self.assertLexerError(r'"\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\x23\`\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23\xf1\x23"', ERR_STRING_ESCAPE)
-        # Should not suffer from slow backtracking when there's no end quote
-        self.assertLexerError(r'"\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\`\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\123\12\123456', ERR_ILLEGAL_CHAR)
-        self.assertLexerError(r'"\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\`\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x23\x2\x23456', ERR_ILLEGAL_CHAR)
 
     def test_preprocessor(self):
         self.assertLexerError('#line "ka"', ERR_FILENAME_BEFORE_LINE)
