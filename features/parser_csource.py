@@ -3,11 +3,13 @@
 import sys
 import os
 
-from sqlalchemy import false, func, true
-sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master')
-sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
-
-from pycparser import c_ast, c_parser, parse_file
+#sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser_master/pycparser')
+#sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
+sys.path.append(os.getcwd()+ '/..')
+from dependencies.pycparser_master.pycparser import c_ast 
+from dependencies.pycparser_master.pycparser import parse_file 
+# from dependencies.pycparser_master.pycparser import c_parser
+# c_ast, c_parser, parse_file
 
 ''' 
 A base NodeVisitor class for visiting c_ast nodes.
@@ -69,12 +71,19 @@ class FuncDefVisitor(c_ast.NodeVisitor):
         self.filepath = filename 
         self.FuncDefInfo_list = []
         self.relation_list = []
+        self.FuncBody_dict = {}
         self.get_func_defs()
     
     def visit_FuncDef(self, node):
-        #print('%s at %s' % (node.decl.name, node.decl.coord))
-        #print(node.name.name)
+        # 获得函数体起始行号，和结束行号
+        compoundVisitor = CompoundVisitor()
+        compoundVisitor.get_Compound(node)
+        coordList = compoundVisitor.return_CoordList()
+        # print(coordList)
         decl_info = {node.decl.name: node.decl.coord.line}
+        # 新增函数起始行号 ，结束行号的解析
+        self.FuncBody_dict[node.decl.name] = coordList
+        # print(decl_info)
         FuncCall_list = [decl_info]
         #print(node)
         tmp_visitor = FuncCallVisitor()
@@ -90,7 +99,7 @@ class FuncDefVisitor(c_ast.NodeVisitor):
         # make sure one exists in PATH.
         # cpp_args的路径是 相对当前执行的路径
         self.ast = parse_file(self.filepath, use_cpp=True,
-                        cpp_args=r'-I../dependencies/pycparser-master/utils/fake_libc_include')
+                        cpp_args=r'-I../dependencies/pycparser_master/utils/fake_libc_include')
         # parser = c_parser.CParser()
         # self.ast = parser.parse(self.filepath)
 
@@ -101,6 +110,9 @@ class FuncDefVisitor(c_ast.NodeVisitor):
     
     def return_relation_list(self):
         return self.relation_list
+    
+    def return_FuncBody_list(self):
+        return self.FuncBody_dict
 
 # get function call list
 class FuncCallVisitor(c_ast.NodeVisitor):
@@ -138,6 +150,27 @@ class FuncCallVisitor(c_ast.NodeVisitor):
     def return_callfunc_list(self):
         return self.FuncCall_list 
 
+class CompoundVisitor(c_ast.NodeVisitor):
+    
+    def __init__(self):
+        super().__init__()
+        #self.filepath = filename
+        self.FuncCoordList = []
+
+    def visit_Compound(self, node):
+        self.FuncCoordList.append(node.coord.line)
+        self.FuncCoordList.append(node.end_coord.line)
+        print('coord: ', node.coord.line,':', node.end_coord.line)
+    
+    def get_Compound(self,node):
+        # self.ast = parse_file(self.filepath, use_cpp=True,
+        #                 cpp_args=r'-I../dependencies/pycparser_master/utils/fake_libc_include')
+        # self.visit(self.ast)
+        self.visit(node)
+    
+    def return_CoordList(self):
+        return self.FuncCoordList
+
 # 清洗 relation_list ,因为包含了所有print ，scanf一些系统函数
 # 与我们目标的函数调用的最终关系表不相干，所以需要去除
 # 方法就是遍历，把FuncCall_list中不在 FuncDeflist声明列表里的函数去除
@@ -145,6 +178,7 @@ def generate_relationList(filename):
 
     visit = FuncDefVisitor(filename)
     FuncDefList = visit.return_FuncDefInfoList()
+    FuncBodyList = visit.return_FuncBody_list()
     funcname_list = []
     for j in range(len(FuncDefList)):
         (funcname,coord),  = FuncDefList[j].items()
@@ -167,19 +201,19 @@ def generate_relationList(filename):
             if funcname in funcname_list:
                 relation_list[i].append(item)
     
-    return relation_list,FuncDefList
+    return relation_list,FuncDefList,FuncBodyList
 
-
+# 判断funcInfo是否有调用其他函数
 def haveCallFunc(funcname, relList):
     for funcinfo in relList:
         (key,val), = funcinfo[0].items()
         if key == funcname and len(funcinfo) >= 2:
-            return true,funcinfo
+            return True,funcinfo
     
-    return false, []
+    return False, []
 
 
-# 我这里的递归绝了，真的太绝了
+# 我这里的递归绝了。
 # 递归的判断后续的函数是否有调用其他函数
 # 参数解释：
 # tmpList ：每次要判断的函数列表
@@ -200,7 +234,7 @@ def getFunc(tmpList, relList, tmp_relList,finalList, notshow):
         #print(key, ' : ', tmpList[IndexOfdictItem])
         res, funclist = haveCallFunc(key,relList)
         #print(res,' : ',funclist)
-        if res == true :
+        if res == True :
             final.append(funclist)
             tmp.remove(funclist)
             getFunc(funclist, relList, tmp,final, notshow)
@@ -226,7 +260,7 @@ def getFunc(tmpList, relList, tmp_relList,finalList, notshow):
 def new_relationList(filename):
     final_relationList = []
     FuncNotToBeShowed = []
-    relList, FuncDefList = generate_relationList(filename)
+    relList, FuncDefList, FuncBodyList = generate_relationList(filename)
     tmp_relList = relList
     tmpList = []
     # 判断是否有main函数
@@ -236,9 +270,13 @@ def new_relationList(filename):
             final_relationList.append(funcInfo)
             tmpList = funcInfo
             tmp_relList.remove(funcInfo)
-    # 不存在main
+    
     if tmpList == []:
-        return relList,FuncDefList
+        # 不存在main 只需要过滤那些被调用且没有调用其他函数的函数
+        for funcInfo in relList:
+            if len(funcInfo) > 1:
+                final_relationList, tmp_relList, FuncNotToBeShowed = getFunc(funcInfo,relList,tmp_relList,final_relationList,FuncNotToBeShowed)
+        print('FuncNotToBeShowed: ',FuncNotToBeShowed)
     else:
         # 如果有main函数，则递归判断后续函数的情况
         final_relationList, tmp_relList, FuncNotToBeShowed = getFunc(tmpList,relList,tmp_relList,final_relationList,FuncNotToBeShowed)
@@ -256,8 +294,8 @@ def new_relationList(filename):
         (key,val), = listitem[0].items()
         if key not in FuncNotToBeShowed_name:
             final_relationList.append(listitem)
-    print(final_relationList)
-    return final_relationList, FuncDefList
+    print('final_relationList', final_relationList)
+    return final_relationList, FuncDefList, FuncBodyList
     
 # 生成 函数调用矩阵， 方法就是 横轴 数轴都为 函数名，如果其中有调用关系那么将位置坐标(index(func1) , index(func2))置为1
 # 这是为了以后制作更复杂的调用关系图所用。
@@ -268,9 +306,12 @@ def generate_FuncCallMatrics():
 
 if __name__ == '__main__':
 
-    filename = 'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/funky.c'
+    filename = 'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser_master/examples/c_files/year.c'
 
-    # visit = FuncDefVisitor(filename)
+    visit = FuncDefVisitor(filename)
+
+    body = visit.return_FuncBody_list()
+    print(body)
     # infoList = visit.return_FuncDefInfoList()
     # # coord is class Coord class object ,which the format like : (file:line:column)
     # # and we can select the specified info to show
@@ -280,7 +321,11 @@ if __name__ == '__main__':
 
 
     #generate_relationList(filename)
-    new_relationList(filename)
+    #new_relationList(filename)
+
+    # visit = CompoundVisitor(filename)
+    # visit.get_Compound()
+
 
     
     # visit = FuncCallVisitor(filename)

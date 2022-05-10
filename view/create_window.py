@@ -1,9 +1,5 @@
 import sys
 import os
-import threading
-
-from nbformat import write
-
 sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
 # from pyqtgraph.flowchart import Flowchart
 
@@ -11,13 +7,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QPlainTextEdit, 
                             QMessageBox, QAction,  QLineEdit, QTextEdit, QLayoutItem,QMenu,QSizePolicy
 from PyQt5.QtCore import Qt, QObject, QDir, QFileInfo, QFile, QTextStream,QVariant,QUrl,pyqtSignal,pyqtSlot,QThread
 
-from PyQt5.QtGui import QColor,QTextFormat, QTextCursor,QCursor
-from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtWebEngineWidgets import *
+from PyQt5.QtGui import QColor,QTextFormat, QTextCursor,QCursor, QKeySequence
+
 #from GraphicView_field import GraphicsView_field as Gf
 from WebEngineView import *
 from LineNumer_field import LineNumber_field as Lf
 from FuncDefTree_field import create_Tree_field as Tf
+from FuncDefTree_field import jumpSignal
 from CodeText_Field import *
 from InputDialog import *
 from parser_csource import *
@@ -51,7 +47,8 @@ class Window(QMainWindow):
 
         #self.callgraph_field = create_WebEngineView_field()
         #self.callgraph_field.selectionChanged.connect(self.jump_to_line)
-        self.editor = create_TextArea() 
+        self.funcBody_list = {}
+        self.editor = create_TextArea(self.funcBody_list) 
         # self.editor.setMinimumSize(600,600)
         # sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         # self.editor.setSizePolicy(sizePolicy)
@@ -65,6 +62,7 @@ class Window(QMainWindow):
         #self.signal = self.Js.JumpToLine_signal
         g_signal.JumpToLine_signal.connect(self.editor.jump_to_line)
         g_signal.inputDialog_signal.connect(self.create_inputDialog)
+        jumpSignal.verify_signal.connect(self.create_inputDialog)
         self.lineNumberBar = Lf(self.editor)
         
         #1. layout control
@@ -107,15 +105,26 @@ class Window(QMainWindow):
         
         # first level menu : file
         self.menubar_field = self.menuBar()
-        self.fileMenu = self.menubar_field.addMenu('&file')
+        self.fileMenu = self.menubar_field.addMenu('&文件')
         self.fileMenu.addAction(self.newAcion)
         self.fileMenu.addAction(self.openAction)
         self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.exitAction)
 
-        self.editMenu = self.menubar_field.addMenu('&edit')
-        self.editMenu = self.menubar_field.addMenu('&view')
-        self.editMenu = self.menubar_field.addMenu('&help')
+        # self.editMenu = self.menubar_field.addMenu('&edit')
+        # self.editMenu.addAction(self.pasteAction)
+        # self.editMenu.addAction(self.copyAction)
+        # self.editMenu.addAction(self.cutAction)
+
+        self.viewMenu = self.menubar_field.addMenu('&视图')
+        self.viewMenu.addAction(self.graphAction)
+        self.viewMenu.addAction(self.treeAction)
+
+        self.optionMenu = self.menubar_field.addMenu('&选项')
+        self.optionMenu.addAction(self.fontAction)
+
+        self.helpMenu = self.menubar_field.addMenu('&帮助')
+        self.helpMenu.addAction(self.docAction)
 
     def create_rightmenu(self):
         # 右键菜单显示
@@ -126,16 +135,36 @@ class Window(QMainWindow):
 
     def create_Actions(self):
 
-        #sencond level menu operation : open exit
-        self.newAcion = QAction('&new', self)
-        self.openAction = QAction('&open', self)
-        self.exitAction = QAction('&exit', self)
-        self.saveAction = QAction('&save', self)
-        #define open file operation to openAction
+        # file sencond level menu operation : open exit
+        self.newAcion = QAction('&新建', self)
+        self.openAction = QAction('&打开', self)
+        self.exitAction = QAction('&退出', self)
+        self.saveAction = QAction('&保存', self, shortcut=QKeySequence.Save)
+        # operation define
         self.newAcion.triggered.connect(self.New_file_event)
         self.openAction.triggered.connect(self.Open_file_event)
         self.saveAction.triggered.connect(self.Save_file_event)
         self.exitAction.triggered.connect(self.close)
+
+        # # edit second level 
+        # self.copyAction = QAction('&copy', self)
+        # self.pasteAction = QAction('&paste', self)
+        # self.cutAction = QAction('&cut', self)
+        # # operation define
+
+        # view sencond level
+        self.graphAction = QAction('&关系图',self)
+        self.treeAction = QAction('&符号列表',self)
+        # operation define
+
+        # option second level
+        self.fontAction = QAction('&字体', self)
+        # operation define
+
+        # help second level
+        self.docAction = QAction('&说明', self)
+        # operation define
+
 
         # 右键菜单部分的Actions
         self.verifyAction = QAction('程序验证',self)
@@ -159,7 +188,7 @@ class Window(QMainWindow):
             # 如果文本区存在错误，则放弃生成调用关系图，或者更新调用关系图
             try:
                 # 获取 内容里面 relation_list
-                relation_list, funcDef_list = new_relationList(self.tmp_file_path)
+                relation_list, funcDef_list , self.funcBody_list = new_relationList(self.tmp_file_path)
 
                 # 生成FuncVerify_list
                 for funcDef_info in funcDef_list:
@@ -169,12 +198,14 @@ class Window(QMainWindow):
                 # 使用GraphicsView作为callgraph
                 #self.callgraph_field = Gf()
                 # 使用 WebEngineView制作CallGraph
-                print(funcDef_list)
-                print(relation_list)
+                print('funcDef_list: ', funcDef_list)
+                print('relation_list: ', relation_list)
+                print('funcBody_list: ', self.funcBody_list)
                 self.callgraph_field = create_WebEngineView_field(relation_list)
                 #self.callgraph_field.create_call_graph(relation_list)
                 # self.callgraph_field.selectionChanged.connect()
                 self.funcTree = Tf(funcDef_list)
+                jumpSignal.jump_signal.connect(self.editor.jump_to_line)
 
                 # =================================================
                 # 为了解决 添加内容后 重复添加treewidget从而界面崩坏的问题
@@ -206,9 +237,11 @@ class Window(QMainWindow):
             print('g_funcVerify_info:', g_funcVerify_info)
 
             self.verify_field = QPlainTextEdit()
-            textToBeShowed = "这里是程序验证入口 \n验证结果将这里显示 \n" + \
+            textToBeShowed = "这里是程序验证入口 ! 验证结果将这里显示 \n" + \
                             'Pre-condition: '+ str(res_list[0]) +'\n' + \
-                            'Post-condition: '+ str(res_list[1]) 
+                            'Post-condition: '+ str(res_list[1]) + '\n' + \
+                            'Content to be verified : \n' + \
+                            self.func_content
             self.verify_field.setPlainText(textToBeShowed)
             # =====================================================
             # 动态添加可视化验证结果窗口
@@ -231,6 +264,9 @@ class Window(QMainWindow):
 
         # 如果不定义为类成员的话,窗口会一闪然后退出,因为 方法执行完之后就被destory了
         self.inputDialog = inputDialog(g_funcVerify_info[verify_content])
+
+        # 获取函数body内容
+        self.func_content = self.editor.getSpecificContent(self.funcBody_list[verify_content])
         # python 自带的thread方法
         # dialog_thread = threading.Thread(target=self.createInputDialog,args=(g_funcVerify_info[verify_content],))
         # dialog_thread.start()
@@ -262,7 +298,7 @@ class Window(QMainWindow):
         # path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + '../dependencies/pycparser-master/examples/c_files/' ,\
         #         'Text Files (*.txt *.c *.py);; All Files (*.*)')
         path, _ = QFileDialog.getOpenFileName(self, "Open File", 
-        'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser-master/examples/c_files/' ,
+        'E:/Github_repo/new-review-way-of-C-srcs/dependencies/pycparser_master/examples/c_files/' ,
         'Text Files (*.txt *.c *.py);; All Files (*.*)')
         
         # path, _ = QFileDialog.getOpenFileName(self, "Open File",'',

@@ -3,17 +3,30 @@ sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
 from parser_csource import *
 from PyQt5.QtWidgets import QApplication,QMainWindow,QTreeWidget,QWidget,QTreeWidgetItem,\
                             QPlainTextEdit,QHBoxLayout,QVBoxLayout,QSizePolicy
+from PyQt5.QtCore import QObject,pyqtSignal
+from CodeText_Field import *
+
+class TreeWidgetSignal(QObject):
+    jump_signal = pyqtSignal(int)
+    verify_signal = pyqtSignal(str)
+
+jumpSignal = TreeWidgetSignal()
 
 class create_Tree_field(QTreeWidget):
 
     def __init__(self, FuncDef_list : list):
         super().__init__()
-        self.funcDef_list = FuncDef_list
+        #self.funcDef_list = FuncDef_list
+        self.funcDef_list = {}
+        # 列表转换为字典形式
+        for funcInfo in FuncDef_list:
+            (key, val), = funcInfo.items()
+            self.funcDef_list[key] = val
 
         self.setColumnCount(1)
         # 设置属性控件的头部标题
-        self.setHeaderLabel('函数列表')
-        for funcInfo in self.funcDef_list:
+        self.setHeaderLabel('符号列表')
+        for funcInfo in FuncDef_list:
             (funcname, coord), = funcInfo.items()
             node = QTreeWidgetItem()
             node.setText(0,funcname)
@@ -21,6 +34,9 @@ class create_Tree_field(QTreeWidget):
 
         #self.setMinimumSize(130,600)
         self.setFixedWidth(150)
+
+        self.clicked.connect(self.send_jump_signal)
+        self.doubleClicked.connect(self.send_verify_signal)
         # sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
         # self.setSizePolicy(sizePolicy)
         # tree_field = QTreeWidget(self)
@@ -40,9 +56,22 @@ class create_Tree_field(QTreeWidget):
         # layoutV.addWidget(tree)
 
     # 点击每个函数声明 可以跳转到行号
-    def Jimp_to_line(self):
-        print('reserve function ! ')
-        print('To be continue ! ')
+    def send_jump_signal(self):
+        # print('reserve function ! ')
+        # print('To be continue ! ')
+        curItem = self.currentItem()
+        treeName = curItem.text(0)
+        #print(treeName)
+        symbol_coord = int(self.funcDef_list[treeName])
+        # for funcInfo in self.funcDef_list:
+        jumpSignal.jump_signal.emit(symbol_coord)
+    
+    # 双击验证事件
+    def send_verify_signal(self):
+        curItem = self.currentItem()
+        treeName = curItem.text(0)
+        jumpSignal.verify_signal.emit(treeName)
+        
 
 
 # if __name__ == '__main__':
