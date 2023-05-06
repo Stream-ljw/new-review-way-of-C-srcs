@@ -35,7 +35,7 @@ class create_WebEngineView_field(QWidget):
         browser = QWebEngineView(self)
         channel=QWebChannel(browser.page())
         channel.registerObject("obj", self.obj)
-        browser.load(QUrl.fromLocalFile(os.getcwd() + "/html/index.html"))
+        browser.load(QUrl.fromLocalFile(os.getcwd() + "/view/html/index.html"))
         browser.page().setWebChannel(channel)
 
     def resizeEvent(self, evt):
@@ -96,8 +96,11 @@ class JsObj(QObject):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    
-    demo = create_WebEngineView_field()
+    sample_list = [
+        [{'fname':'coord'}, {'callfname':'coord'},{'callfname2':'coord'}],
+        [{'fname2':'coord'}],
+        [{'fname': 'coord'}]]
+    demo = create_WebEngineView_field(sample_list)
     demo.show()
     
     sys.exit(app.exec_())
