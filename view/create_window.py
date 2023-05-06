@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.append(r'E:/Github_repo/new-review-way-of-C-srcs/features')
+sys.path.append(r'./features')
+sys.path.append(r'./view')
 # from pyqtgraph.flowchart import Flowchart
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QPlainTextEdit, QHBoxLayout, QVBoxLayout, QFileDialog, \
